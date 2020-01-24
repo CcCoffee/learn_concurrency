@@ -112,4 +112,11 @@ class Unsafe{
   - 缺点 : 对于高并发场景会造成大量失败重新while循环,效率不高。使用LongAdder代替
 * LongAdder : 在低并发时效率与AtomicLong基本相同，高并发时由于原理不同性能也很高
   - 缺点 : 数据可能有些偏差
-  - 适用场景 : 网站访问计数等不需要太精确的业务 
+  - 适用场景 : 网站访问计数等不需要太精确的业务
+
+#### AtomicReference
+一般仅使用`boolean compareAndSet(V expect, V update)`
+
+#### AtomicIntegerFieldUpdater
+用于线程安全的更新实例对象的某个属性值
+一般仅使用`boolean compareAndSet(V expect, V update)`
