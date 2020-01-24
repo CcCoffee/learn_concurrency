@@ -27,6 +27,7 @@ public class CountExample {
     private static AtomicLong ATOMIC_LONG_COUNT = new AtomicLong(0);
     private static LongAdder LONG_ADDER_COUNT = new LongAdder();
     private static AtomicReference<Integer> ATOMIC_REF = new AtomicReference<>(0);
+    private static AtomicBoolean HAS_HAPPENED = new AtomicBoolean(false);
 
     /**
      * 多个线程可能同时操作COUNT变量，而COUNT++并非原子操作
@@ -199,5 +200,36 @@ public class CountExample {
         }else {
             log.error("failed : {}", countExample.viewCount);
         }
+    }
+
+    /**
+     * 通过使用AtomicBoolean保证在高并发下代码只执行一次
+     *
+     * @throws Exception 忽略异常
+     */
+    @ThreadSafe
+    @Test
+    public void countWithAtomicBoolean() throws Exception {
+        long startTime = new Date().getTime();
+        //请求总数
+        int requestCount = 5000;
+        CountDownLatch countDownLatch = new CountDownLatch(requestCount);
+        //并发请求数
+        int concurrentCount = 50;
+        Semaphore semaphore = new Semaphore(concurrentCount);
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        for (int i = 0; i < requestCount; i++) {
+            semaphore.acquire();
+            executorService.execute(() -> {
+                if(HAS_HAPPENED.compareAndSet(false,true)){
+                    log.info("only execute once : {}", HAS_HAPPENED.get());
+                }
+            });
+            semaphore.release();
+            countDownLatch.countDown();
+        }
+        countDownLatch.await();
+        executorService.shutdown();
+        log.info("total time = {} ms", new Date().getTime() - startTime);
     }
 }

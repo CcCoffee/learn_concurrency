@@ -114,16 +114,16 @@ class Unsafe{
   - 缺点 : 数据可能有些偏差
   - 适用场景 : 网站访问计数等不需要太精确的业务
 
-#### AtomicReference
+#### * AtomicReference
 一般仅使用`boolean compareAndSet(V expect, V update)`
 > 很少使用
 
-#### AtomicIntegerFieldUpdater
+#### * AtomicIntegerFieldUpdater
 用于线程安全的更新实例对象的某个属性值
 一般仅使用`boolean compareAndSet(V expect, V update)`
 > 很少使用
 
-### AtomicStampedReference与CAS中的ABA问题
+#### AtomicStampedReference与CAS中的ABA问题
 
 * 描述：在CAS操作时，其他线程将变量的值从A改成了B,然后又将B改回了A。
 * 解决思路：每次变量改变时，将变量的版本号加1,只要变量被修改过，变量的版本号就会发生递增变化
@@ -143,3 +143,16 @@ class AtomicStampedReference{
 }
 ```
 stamp是每次更新时就维护的， 通过对比来判断是不是一个版本号，expectedStamp == current.stamp
+
+#### AtomicLongArray
+与AtomicLong类似，用于操作数组，所有操作需要加上一个index用于索引
+```java
+class AtomicLongArray {
+    public final long incrementAndGet(int i) {
+        return getAndAdd(i, 1) + 1;
+    }
+}
+```
+
+### AtomicBoolean
+使用场景 : 让代码只执行一次
