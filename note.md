@@ -154,5 +154,26 @@ class AtomicLongArray {
 }
 ```
 
-### AtomicBoolean
+#### AtomicBoolean
 使用场景 : 让代码只执行一次
+
+### 同步锁
+#### synchronized
+* synchronized:**依赖JVM**
+  * synchronized修饰的对象有四种：
+    1. 修饰代码块：作用范围是大括号括起来的代码，作用于调用的对象
+       * `synchronized(this) {}`
+    2. 修饰方法：作用范围是整个方法，作用于调用的对象
+       * `public synchronized void test()`
+    3. 修饰静态方法：作用范围是整个静态的方法，作用于这个类的所有对象
+       * `public static synchronized void test()`
+    4. 修饰类：作用范围是synchronized括号括起来的部分，作用于这个类的所有对象
+       * `synchronized(Example.class)`
+  * 子类无法继承父类的synchronized关键字，因为synchronized不属于方法声明的一部分
+#### lock
+
+## synchronized、lock与Atomic的对比
+* synchronized : 不可中断锁，一旦代码执行到作用范围之内必须等待代码执行完的，
+适合竞争不激烈， 可读性好
+* lock : 可中断锁，多样化同步，竞争激烈时能维持常态
+* Atomic : 竞争激烈时能维持常态，**比Lock性能好**；**只能同步一个值**，而不是代码块
