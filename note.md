@@ -65,7 +65,7 @@
 * 有序性 : 一个线程观察其他线程中的指令执行顺序，由于指令重排序的存在，该观察结果一般杂乱无序
 ## 原子性
 ### atomic包
-#### 源码分析
+#### AtomicInteger源码分析
 AtomicInteger类中提供了incrementAndGet方法;
 ```java
 class AtomicInteger{
@@ -106,3 +106,10 @@ class Unsafe{
     ```
 * 帮助理解：把AtomicInteger里面存的值看成是工作内存中的值.
 把底层的值看成是主内存中的值。在多线程中，工作内存中的值和主内存中的值会出现不一样的情况。
+
+#### AtomicLong与LongAdder
+* AtomicLong与AtomicInteger基本相同
+  - 缺点 : 对于高并发场景会造成大量失败重新while循环,效率不高。使用LongAdder代替
+* LongAdder : 在低并发时效率与AtomicLong基本相同，高并发时由于原理不同性能也很高
+  - 缺点 : 数据可能有些偏差
+  - 适用场景 : 网站访问计数等不需要太精确的业务 
