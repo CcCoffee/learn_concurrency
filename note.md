@@ -116,7 +116,30 @@ class Unsafe{
 
 #### AtomicReference
 一般仅使用`boolean compareAndSet(V expect, V update)`
+> 很少使用
 
 #### AtomicIntegerFieldUpdater
 用于线程安全的更新实例对象的某个属性值
 一般仅使用`boolean compareAndSet(V expect, V update)`
+> 很少使用
+
+### AtomicStampedReference与CAS中的ABA问题
+
+* 描述：在CAS操作时，其他线程将变量的值从A改成了B,然后又将B改回了A。
+* 解决思路：每次变量改变时，将变量的版本号加1,只要变量被修改过，变量的版本号就会发生递增变化
+* 调用compareAndSet方法：
+```java
+class AtomicStampedReference{
+    public boolean compareAndSet(V expectedReference, V newReference,
+                                 int expectedStamp, int newStamp) {
+        Pair<V> current = pair;
+        return
+            expectedReference == current.reference &&
+            expectedStamp == current.stamp &&
+            ((newReference == current.reference &&
+              newStamp == current.stamp) ||
+             casPair(current, Pair.of(newReference, newStamp)));
+    }
+}
+```
+stamp是每次更新时就维护的， 通过对比来判断是不是一个版本号，expectedStamp == current.stamp
