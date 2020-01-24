@@ -1,6 +1,8 @@
-# 并发测试工具
+# 1. 并发测试
+并发测试可以使用工具或者使用代码
+## 使用工具并发测试
 常见的测试工具有Postman, AB, jMeter
-## Apache bench
+### Apache bench
 `ab -n 1000 -c 50 http://localhost:8040/hello`
 - 请求参数
     * -n : 请求次数
@@ -42,3 +44,14 @@
       99%     32
      100%     36 (longest request)
     ```
+## 使用代码进行并发测试
+### CountDownLatch
+阻塞线程，并且在达到某种条件下恢复线程。
+* 应用场景
+  - 可用于限制请求总数，并在所有请求执行完后再进行其他操作。
+### Semaphore
+适合于控制同时并发的线程数。就像高速路上的通道数，通道越多能同时通过的🚗越多
+* 应用场景
+  - 可用于模拟同时请求的用户数
+### CountDownLatch与Semaphore结合使用
+在模拟并发测试的时候并在所有线程执行完输出一些结果，使用CountDownLatch与Semaphore结合起来使用。
