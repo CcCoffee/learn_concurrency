@@ -23,6 +23,7 @@ public class CountExample {
 
 
     private static int COUNT = 0;
+    private volatile static int V_COUNT = 0;
     private static AtomicInteger ATOMIC_INT_COUNT = new AtomicInteger(0);
     private static AtomicLong ATOMIC_LONG_COUNT = new AtomicLong(0);
     private static LongAdder LONG_ADDER_COUNT = new LongAdder();
@@ -230,6 +231,34 @@ public class CountExample {
         }
         countDownLatch.await();
         executorService.shutdown();
+        log.info("total time = {} ms", new Date().getTime() - startTime);
+    }
+
+    /**
+     * volatile并不保证原子性，所以线程不安全，count的结果不一定为5000
+     *
+     * @throws Exception 忽略异常
+     */
+    @NotThreadSafe
+    @Test
+    public void volatileCount() throws Exception {
+        long startTime = new Date().getTime();
+        //请求总数
+        int requestCount = 5000;
+        CountDownLatch countDownLatch = new CountDownLatch(requestCount);
+        //并发请求数
+        int concurrentCount = 50;
+        Semaphore semaphore = new Semaphore(concurrentCount);
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        for (int i = 0; i < requestCount; i++) {
+            semaphore.acquire();
+            executorService.execute(() -> V_COUNT++);
+            semaphore.release();
+            countDownLatch.countDown();
+        }
+        countDownLatch.await();
+        executorService.shutdown();
+        log.error("count = {}", V_COUNT);
         log.info("total time = {} ms", new Date().getTime() - startTime);
     }
 }
