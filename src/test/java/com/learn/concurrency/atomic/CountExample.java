@@ -236,6 +236,7 @@ public class CountExample {
 
     /**
      * volatile并不保证原子性，所以线程不安全，count的结果不一定为5000
+     * volatile变量在各个线程的工作内存中不存在一致性问题，但Java运算并非原子操作，导致 volatile变量的运算在并发下一样是不安全的
      *
      * @throws Exception 忽略异常
      */

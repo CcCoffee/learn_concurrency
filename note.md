@@ -64,7 +64,30 @@
 * 可见性 : 一个线程对主内存的修改可以及时的被其他线程观察到
 * 有序性 : 一个线程观察其他线程中的指令执行顺序，由于指令重排序的存在，该观察结果一般杂乱无序
 ## 2.1 原子性
-### atomic包
+
+**原子操作是不能被线程中断机制中断的操作**，一旦操作开始，则它一定在可能的切换到其他线程之前执行完毕。简而言之就是不能被中断的操作，**如赋值或return**。**在其执行过程中，不允许其他并行线程对该变量进行读取和写入的操作。 如果发生竞争，则其他线程必须等待。**
+
+### JVM规定
+
+1. 对于读写**除long和double之外**的基本类型变量的简单操作，可以保证它们的原子性来操作内存，因为JVM将long和double这样的64位的变量拆分成两个分离的32位来操作，这样很可能在一个读取和写入操作之间切换到其它线程，从而导致错误的结果。
+
+2. 类似a+=2的操作不具备原子性，因为在JVM中这个操作需要三个步骤：
+
+   ```bash
+   1）取出a
+   2）计算a+2
+   3）将计算结果写入内存
+   ```
+
+   在上述步骤之间很可能线程调度器中断，转向另一个任务，这个任务可能修改这个域，造成结果错误，所以这个操作不是原子性的。
+
+   同样a++也不具备原子性。（注：在C++中以上这两种操作都是原子性的）
+
+### 没有原子性产生的问题
+
+当前线程执行中断，其他线程覆盖执行。参考JVM规定的第二点说明。
+
+### 原子性 - atomic包
 #### AtomicInteger源码分析
 AtomicInteger类中提供了incrementAndGet方法;
 ```java
@@ -157,8 +180,8 @@ class AtomicLongArray {
 #### AtomicBoolean
 使用场景 : 让代码只执行一次
 
-### 同步锁
-#### synchronized
+### 原子性 - 同步锁
+#### 原子性 - synchronized
 * synchronized:**依赖JVM**
   * synchronized修饰的对象有四种：
     1. 修饰代码块：作用范围是大括号括起来的代码，作用于调用的对象
@@ -170,7 +193,7 @@ class AtomicLongArray {
     4. 修饰类：作用范围是synchronized括号括起来的部分，作用于这个类的所有对象
        * `synchronized(Example.class)`
   * 子类无法继承父类的synchronized关键字，因为synchronized不属于方法声明的一部分
-#### lock
+#### 原子性 - lock
 
 ### synchronized、lock与Atomic的对比
 * synchronized : 不可中断锁，一旦代码执行到作用范围之内必须等待代码执行完的，
@@ -180,7 +203,16 @@ class AtomicLongArray {
 
 ## 2.2 可见性
 参考: https://www.cnblogs.com/yaowen/p/11240540.html
-* 任何线程都能看到变量的最新值
+```bash
+可见性是指当多个线程访问同一个变量时，一个线程修改了这个变量的值，其他线程能够立即看得到修改的值。
+```
+
+### 没有可见性产生的问题
+
+如果线程t1与线程t2分别被安排在了不同的处理器上面，那么t1与t2对于变量A的修改时相互不可见，如果t1给A赋值，然后t2又赋新值，那么t2的操作就将t1的操作覆盖掉了，这样会产生不可预料的结果。所以，**即使有些操作是原子性的，但是如果不具有可见性，那么多个处理器中备份的存在就会使原子性失去意义**。
+
+(ps:原子性应该只是读和计算，而没有写入主内存）
+
 * 导致共享变量在线程间不可见的原因
     - 线程交叉执行
     - 重排序结合线程交叉执行
@@ -193,18 +225,74 @@ class AtomicLongArray {
 对于不同对象其实锁的范围是不一样的，如果不是同一把锁他们之间是不会互相影响的）
 > 正因为synchronized的可见性以及原子性，因此在线程安全同步的时候只要使用synchronized
 进行修饰之后变量就可以放心进行使用
-### 可见性 - volatile
+### volatile
 * 定义 : volatile是“轻量级”synchronized，通过加入**内存屏障**和**禁止重排序**优化来保证了共享变量的“可见性”（JMM确保所有线程看到这个变量的值是一致的)
   - 当CPU写数据时，如果发现操作的变量是共享变量，即在其他CPU中也存在该变量的副本，会发出信号通知其他CPU将该变量的缓存行置为无效状态并且锁住缓存行，因此当其他CPU需要读取这个变量时，要等锁释放，并发现自己缓存行是无效的，那么它就会从内存重新读取。
   - 使用和执行成本比synchronized低，因为它不会引起线程上下文切换和调度。
-#### 1. 硬件层内存屏障
+
+#### volatile的特性 - 可见性
+
+#### volatile的特性 - 禁止重排序
+
+```bash
+普通变量仅仅会保证在单线程的执行过程中所有依赖赋值结果的地方都能获取到正确的结果，而不能保证变量赋值操作的顺序与程序代码中的执行顺序一致。我们在单线程的执行过程中是无法感知到这点，这也就是java 内存模型中描述的所谓的 “线程内表现为串行的语义”。
+```
+
+【指令重排序演示（伪代码）】
+
+```bash
+
+
+        Map configOptions;  
+        char[] configText;  
+        //  此变量必须为 volatile  
+        volatile boolean initialized = false;  
+
+        1，// 假设以下代码在线程A 中执行  
+        // 模拟读取配置信息，当读取完成后将 initialized 设置为true 已通知其他线程配置可用  
+        configOptions = new HashMap();  
+        configText = readConfigFile(filename);  
+        processConfigOptions(configText, configOptions);  
+        initialized = true;  
+
+        2，// 假设以下代码在线程B 中执行  
+        // 等待initialized 为true，代表线程A 已经把配置信息初始化完成  
+        while(!initialized) {  
+            sleep();  
+        }  
+        // 使用线程A 中初始化好的配置信息  
+        doSomethingWithConfig();  
+    }
+```
+
+如果定义initialized变量没有使用volatile修饰：就可能会由于指令重排序的优化，导致位于线程A 中最后一句码initialized=true被提前执行（即这行代码对应的汇编代码被提前执行），这样在线程B中使用配置信息的代码就可能出现错误（获取时还没有初始化配置），而volatile关键字则可以避免此类情况的发生。
+
+#### 内存屏障
+
+```bash
+因为缓存导致的可见性和,cpu/编译期重排序执行优化可能导致错误。
+不同的处理器重排序的规则也是不一样的。
+java内存模型为了避免这种差异造成的问题，通过内存屏障方式来实现可见见性和非重排序。
+
+常见的有2种方式：
+1，通过 Synchronized关键字包住的代码区域,插入了StoreStore屏障
+2，使用了volatile修饰变量,则对变量的写操作,会插入StoreLoad屏障.
+
+不常用的，通过Unsafe这个类来执行.
+UNSAFE.putOrderedObject类似这样的方法,会插入StoreStore内存屏障 
+Unsafe.putVolatiObject 则是插入了StoreLoad屏障
+```
+
+##### 1. 硬件层内存屏障
+
 * 作用
   1. 阻止屏障两侧的指令重排序；
   2. 强制把写缓冲区/高速缓存中的脏数据等写回主内存，让缓存中相应的数据失效。
 * 分类
   - Load Barrier : 在指令前插入Load Barrier，可以让高速缓存中的数据失效，强制从新从主内存加载新数据
   - Store Barrier : 在指令后插入Store Barrier，能让写入缓存中的最新数据更新写入主内存，让其他线程可见
-#### 2. Java内存屏障
+##### 2. Java内存屏障
+
 * 定义 : 内存屏障，又称内存栅栏，是一组处理器指令，用于实现对内存操作的顺序限制。
 * 内存屏障的作用：
   1. 在有内存屏障的地方，会禁止指令重排序，即屏障下面的代码不能跟屏障上面的代码交换执行顺序。
@@ -215,7 +303,8 @@ class AtomicLongArray {
   - LoadStore屏障：对于这样的语句Load1; LoadStore; Store2，在Store2及后续写入操作被刷出前，保证Load1要读取的数据被读取完毕。
   - StoreLoad屏障：对于这样的语句Store1; StoreLoad; Load2，在Load2及后续所有读取操作执行前，保证Store1的写入对所有处理器可见。它的开销是四种屏障中最大的。
     * 在大多数处理器的实现中，这个屏障是个万能屏障，兼具其它三种内存屏障的功能。
-#### 3. volatile语义中的内存屏障
+##### 3. volatile语义中的内存屏障
+
 * 对volatile变量*写操作*时，会在写操作后加入一条store屏障指令，将本地内存中的变量值
 刷新到主内存
 * 对volatile变量*读操作*时，会在读操作前加入一条load屏障指令，从主内存中读取共享变量
@@ -229,24 +318,29 @@ class AtomicLongArray {
 * 图示
 <img src="https://tva1.sinaimg.cn/large/006tNbRwgy1gb815cp2taj30kw0csgp6.jpg" alt="image-20200124224031757" style="zoom:70%;" />
 <img src="https://tva1.sinaimg.cn/large/006tNbRwgy1gb816ifuiyj30ko0csn0s.jpg" alt="image-20200124224138172" style="zoom:70%;" />
-#### 4. volatile的实现原理
+
+#### volatile的实现原理
+
 通过对OpenJDK中的unsafe.cpp源码的分析，会发现被volatile关键字修饰的变量会存在一个“lock:”的前缀。
 Lock前缀，Lock不是一种内存屏障，但是它能完成类似内存屏障的功能。
 Lock会对CPU总线和高速缓存加锁，可以理解为CPU指令级的一种锁。类似于Lock指令。
 在具体的执行上，它先对总线和缓存加锁，然后执行后面的指令，在Lock锁住总线的时候，
 其他CPU的读写请求都会被阻塞，直到锁释放。最后释放锁后会把高速缓存中的脏数据全部刷新回主内存，
 且这个写回内存的操作会使在其他CPU里缓存了该地址的数据无效。
-#### 5. volatile的作用
+
+#### volatile的作用
 1. 锁总线，其它CPU对内存的读写请求都会被阻塞，直到锁释放，不过实际后来的处理器都采用锁缓存替代锁总线，因为锁总线的开销比较大，锁总线期间其他CPU没法访问内存
 2. lock后的写操作会回写已修改的数据，同时让其它CPU相关缓存行失效，从而重新从主存中加载最新的数据
 3. 不是内存屏障却能完成类似内存屏障的功能，阻止屏障两遍的指令重排序（通过“lock:”的前缀）
-> volatile不具有原子性，用它修饰变量自增（因为自增可拆分为三个CPU指令）线程不安全
-#### 6. 适用场景
+4. 当对long和double类型的变量用关键字volatile修饰时，就能获得简单操作**赋值**和**return**的原子性。
+> 但除对long和double简单类型的简单操作外，volatile并不能提供原子性，即使对一个变量用volatile修饰，对这个变量的操作也不是原子性的。
+#### 适用场景
 * 使用场景1 : 作为状态标记量
   - 使用volatile必须具备两个条件
-    * 对变量的写操作不依赖于当前值
-    * 该变量没有包含在具有其他变量的式子中
-  - 例子
+    * 运算结果并不依赖变量的当前值，或者能确保只有单一的线程修改变量的值。
+    * 变量不需要与其他的状态变量共同参与不变约束。
+    
+  - 例子1：当init被赋值为true，while循环能够立即结束
     ```java
     class Example {
         public void test(){
@@ -263,4 +357,39 @@ Lock会对CPU总线和高速缓存加锁，可以理解为CPU指令级的一种�
         }
     }
     ```
+    
+  - 例子2
+  
+    ```java
+    // 使用volatile变量来控制并发  
+    public class VolatileVariableTest {  
+        volatile boolean shutdownRequested; // volatile变量  
+    
+        public void shutdown() {  
+            shutdownRequested = true;  
+        }  
+        public void doWork() {  
+            while(!shutdownRequested) {  
+                // do sth.  
+            }  
+        }
+    }
+    ```
+  
 * 使用场景2 : 用来双重检测，单例模式中的双重检测机制
+
+#### 对于 long 和 double 型变量的规则
+
+**（1）64位数据类型的非原子性协定**
+
+Java内存模型要求lock， unlock， read， load， assign， use，store，write这8个操作都具有原子性，但对于64位的数据类型（long和double），在模型中特别定义了一条相对宽松的规定：
+
+允许虚拟机将没有被 volatile 修饰的64位数据的读写操作划分为 两次 32位的操作来进行，即允许虚拟机实现选择可以不保证64位数据类型的 load， store，read和write 这4个操作的原子性，这点就是所谓的 long 和double 的非原子性协定（Nonatomic Treatment of double and long Variable）。
+
+**（2）非原子性协定导致的问题**
+
+如果有多个线程共享一个并未声明为 volatile的 long 或 double类型的变量，并且同时对它们进行读取和修改操作，那么某些线程可能会读取到一个既非原值，也不是其他线程修改值的代表了“半个变量”的数值。
+
+**（3）“半个变量”的情况**
+
+不过这种读取到的“半个变量”的情况非常罕见（商业JVM中尚未出现）：因为Java内存模型虽然允许虚拟机不把long 和 double 变量的读写实现成原子操作，但允许虚拟机选择把 这些操作实现为具有原子性的操作，而且还强烈建议虚拟机这样实现。实际开发中，目前各平台下的商用虚拟机几乎选择把64位数据读写操作作为原子操作来对待，因此平时编写代码时不需要把long 和 double 变量专门声明为 volatile。
