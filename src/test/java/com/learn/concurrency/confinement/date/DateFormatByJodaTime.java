@@ -1,34 +1,38 @@
-package com.learn.concurrency.confinement.unsafe;
+package com.learn.concurrency.confinement.date;
 
-import com.learn.concurrency.annotation.NotRecommend;
+import com.learn.concurrency.annotation.Recommend;
 import com.learn.concurrency.annotation.ThreadSafe;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
+/**
+ * 使用joda-time
+ */
 @Slf4j
 @ThreadSafe
-@NotRecommend
-public class DateFormatExample1 {
+@Recommend
+public class DateFormatByJodaTime {
 
     public static int client = 5000;
     public static int threadTotal = 200;
 
-    public static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+    public static DateTimeFormatter dateFormat = DateTimeFormat.forPattern("yyyyMMdd");
 
     public static void main(String[] args) throws Exception {
         ExecutorService executorService = Executors.newCachedThreadPool();
         CountDownLatch countDownLatch = new CountDownLatch(client);
         Semaphore semaphore = new Semaphore(threadTotal);
         for (int i = 0; i < client; i++) {
+            final int count = i;
             semaphore.acquire();
             executorService.execute(() -> {
-                parse();
+                parse(count);
             });
             semaphore.release();
             countDownLatch.countDown();
@@ -37,14 +41,7 @@ public class DateFormatExample1 {
         executorService.shutdown();
     }
 
-    /**
-     * 解决方案1.
-     */
-    public synchronized static void parse() {
-        try {
-            dateFormat.parse("20200129");
-        } catch (ParseException e) {
-            log.error("parse error : ", e);//java.lang.NumberFormatException: For input string: ""
-        }
+    public static void parse(int i) {
+        log.info("{} : {}", i, dateFormat.parseDateTime("20200129"));
     }
 }

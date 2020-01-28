@@ -1,6 +1,7 @@
-package com.learn.concurrency.confinement.unsafe;
+package com.learn.concurrency.confinement.date;
 
-import com.learn.concurrency.annotation.NotThreadSafe;
+import com.learn.concurrency.annotation.NotRecommend;
+import com.learn.concurrency.annotation.ThreadSafe;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.ParseException;
@@ -11,8 +12,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
 @Slf4j
-@NotThreadSafe
-public class DateFormatExample {
+@ThreadSafe
+@NotRecommend
+public class DateFormatBySynchronized {
 
     public static int client = 5000;
     public static int threadTotal = 200;
@@ -36,13 +38,9 @@ public class DateFormatExample {
     }
 
     /**
-     * SimpleDateFormat内部使用Calender对象进行日期操作，而Calendar内部存储的日期数据的全局变量
-     * field，time等都是不安全的，更重要的Calendar内部函数操作对变量操作是不具有原子性的操作。
-     * 例如ThreadB执行parse时会将ThreadA执行parse时的filed数组中间结果清空。
-     *
-     * 原因详见 ：https://www.cnblogs.com/yy3b2007com/p/11360895.html
+     * 解决方案1.
      */
-    public static void parse() {
+    public synchronized static void parse() {
         try {
             dateFormat.parse("20200129");
         } catch (ParseException e) {
