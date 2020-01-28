@@ -1,6 +1,7 @@
 package com.learn.concurrency.collections;
 
 import com.learn.concurrency.annotation.NotThreadSafe;
+import com.learn.concurrency.annotation.ThreadSafe;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
@@ -9,17 +10,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-public class UnsafeCollectionsExample {
+public class SafeCollectionsExample {
 
-    @NotThreadSafe
+    @ThreadSafe
     @Test
-    public void arrayListExample() throws Exception{
+    public void useVectorInsteadOfArrayListExample() throws Exception{
         //请求总数
         int requestCount = 5000;
         CountDownLatch countDownLatch = new CountDownLatch(requestCount);
-        ArrayList<Integer> list = new ArrayList<>();
+        Vector<Integer> list = new Vector<>();
         //并发请求数
         int concurrentCount = 50;
         Semaphore semaphore = new Semaphore(concurrentCount);
@@ -35,42 +37,16 @@ public class UnsafeCollectionsExample {
         }
         countDownLatch.await();
         executorService.shutdown();
-        log.info("size : {}", list.size());
+        log.info("Vector size : {}", list.size());
     }
 
-    /**
-     * 虽然Vector本身是线程安全的，但是这里是由先检查再执行非原子操作引发的线程不安全问题 ( if(condition(a)) {handle(a);} )
-     *
-     * @throws Exception
-     */
-    @NotThreadSafe
+    @ThreadSafe
     @Test
-    public void vectorMayNotSafeExample(){
-        List<Integer> list = new Vector<>();
-        while(true){
-            for (int i = 0; i < 10; i++) {
-                list.add(i);
-            }
-            new Thread(()->{
-                for (int i = 0; i < list.size(); i++) {
-                    list.remove(i);
-                }
-            }).start();
-            new Thread(()->{
-                for (int i = 0; i < list.size(); i++) {
-                    list.get(i);//java.lang.ArrayIndexOutOfBoundsException: Array index out of range: 17
-                }
-            }).start();
-        }
-    }
-
-    @NotThreadSafe
-    @Test
-    public void hashSetExample() throws Exception{
+    public void useCollectionsInsteadOfHashSetExample() throws Exception{
         //请求总数
         int requestCount = 5000;
         CountDownLatch countDownLatch = new CountDownLatch(requestCount);
-        HashSet<Integer> set = new HashSet<>();
+        Set<Integer> set = Collections.synchronizedSet(new HashSet<>());
         //并发请求数
         int concurrentCount = 50;
         Semaphore semaphore = new Semaphore(concurrentCount);
@@ -86,16 +62,16 @@ public class UnsafeCollectionsExample {
         }
         countDownLatch.await();
         executorService.shutdown();
-        log.info("hashSet size : {}", set.size());
+        log.info("synchronizedSet size : {}", set.size());
     }
 
-    @NotThreadSafe
+    @ThreadSafe
     @Test
-    public void hashMapExample() throws Exception{
+    public void useHashTableInsteadOfHashMapExample() throws Exception{
         //请求总数
         int requestCount = 5000;
         CountDownLatch countDownLatch = new CountDownLatch(requestCount);
-        Map<Integer,Integer> map = new HashMap<>();
+        Map<Integer,Integer> map = new Hashtable<>();
         //并发请求数
         int concurrentCount = 50;
         Semaphore semaphore = new Semaphore(concurrentCount);
@@ -111,31 +87,7 @@ public class UnsafeCollectionsExample {
         }
         countDownLatch.await();
         executorService.shutdown();
-        log.info("hashMap size : {}", map.size());
+        log.info("Hashtable size : {}", map.size());
     }
 
-    @NotThreadSafe
-    @Test
-    public void conditionExample() throws Exception{
-        //请求总数
-        int requestCount = 50000;
-        CountDownLatch countDownLatch = new CountDownLatch(requestCount);
-        //并发请求数
-        int concurrentCount = 1000;
-        Semaphore semaphore = new Semaphore(concurrentCount);
-        ExecutorService executorService = Executors.newCachedThreadPool();
-        for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
-            int finalI = i;
-            executorService.execute(() -> {
-                if(finalI == 35000){
-                    log.info("hit {}",finalI);//难以测试出多个线程进入
-                }
-            });
-            semaphore.release();
-            countDownLatch.countDown();
-        }
-        countDownLatch.await();
-        executorService.shutdown();
-    }
 }
