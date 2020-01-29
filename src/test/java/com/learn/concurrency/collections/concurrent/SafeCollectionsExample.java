@@ -1,46 +1,32 @@
-package com.learn.concurrency.lock;
+package com.learn.concurrency.collections.concurrent;
 
-import com.learn.concurrency.annotation.NotThreadSafe;
+import com.learn.concurrency.annotation.ThreadSafe;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
-import java.util.Date;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
+import java.util.List;
+import java.util.concurrent.*;
 
-/**
- * 使用锁进行计数
- */
 @Slf4j
-public class CountExample {
+public class SafeCollectionsExample {
 
-    private static int COUNT = 0;
-
-    /**
-     * 使用synchronized保证同步
-     *
-     * @throws Exception 忽略异常
-     */
-    @NotThreadSafe
+    @ThreadSafe
     @Test
-    public void count() throws Exception {
-        long startTime = new Date().getTime();
+    public void copyOnWriteArrayListExample() throws Exception{
         //请求总数
         int requestCount = 5000;
         CountDownLatch countDownLatch = new CountDownLatch(requestCount);
+        List<Integer> list = new CopyOnWriteArrayList<>();
         //并发请求数
         int concurrentCount = 50;
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
+            int finalI = i;
             executorService.execute(() -> {
                 try {
                     semaphore.acquire();
-                    synchronized (this){
-                        COUNT++;
-                    }
+                    list.add(finalI);
                     semaphore.release();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -50,7 +36,6 @@ public class CountExample {
         }
         countDownLatch.await();
         executorService.shutdown();
-        log.error("count = {}", COUNT);
-        log.info("total time = {} ms", new Date().getTime() - startTime);
+        log.info("size : {}", list.size());
     }
 }

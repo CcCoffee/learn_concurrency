@@ -1,6 +1,5 @@
 package com.learn.concurrency.collections;
 
-import com.learn.concurrency.annotation.NotThreadSafe;
 import com.learn.concurrency.annotation.ThreadSafe;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -10,7 +9,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class SafeCollectionsExample {
@@ -27,13 +25,17 @@ public class SafeCollectionsExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
             int finalI = i;
             executorService.execute(() -> {
-                list.add(finalI);
+                try {
+                    semaphore.acquire();
+                    list.add(finalI);
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -52,13 +54,17 @@ public class SafeCollectionsExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
             int finalI = i;
             executorService.execute(() -> {
-                set.add(finalI);
+                try {
+                    semaphore.acquire();
+                    set.add(finalI);
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -77,13 +83,18 @@ public class SafeCollectionsExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
             int finalI = i;
             executorService.execute(() -> {
-                map.put(finalI,finalI);
+                try {
+                    semaphore.acquire();
+                    map.put(finalI,finalI);
+                    log.info("current thread : {}", Thread.currentThread().getName());
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();

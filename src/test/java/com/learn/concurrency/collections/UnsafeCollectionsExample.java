@@ -25,13 +25,17 @@ public class UnsafeCollectionsExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
             int finalI = i;
             executorService.execute(() -> {
-                list.add(finalI);
+                try {
+                    semaphore.acquire();
+                    list.add(finalI);
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -76,13 +80,17 @@ public class UnsafeCollectionsExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
             int finalI = i;
             executorService.execute(() -> {
-                set.add(finalI);
+                try {
+                    semaphore.acquire();
+                    set.add(finalI);
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -101,13 +109,17 @@ public class UnsafeCollectionsExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
             int finalI = i;
             executorService.execute(() -> {
-                map.put(finalI,finalI);
+                try {
+                    semaphore.acquire();
+                    map.put(finalI,finalI);
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -125,15 +137,19 @@ public class UnsafeCollectionsExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
             int finalI = i;
             executorService.execute(() -> {
-                if(finalI == 35000){
-                    log.info("hit {}",finalI);//难以测试出多个线程进入
+                try {
+                    semaphore.acquire();
+                    if(finalI == 35000){
+                        log.info("hit {}",finalI);//难以测试出多个线程进入
+                    }
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
+                countDownLatch.countDown();
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();

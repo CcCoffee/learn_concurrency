@@ -47,10 +47,16 @@ public class CountExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
-            executorService.execute(() -> COUNT++);
-            semaphore.release();
-            countDownLatch.countDown();
+            executorService.execute(() -> {
+                try {
+                    semaphore.acquire();
+                    COUNT++;
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
+            });
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -75,10 +81,16 @@ public class CountExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
-            executorService.execute(() -> ATOMIC_INT_COUNT.incrementAndGet());
-            semaphore.release();
-            countDownLatch.countDown();
+            executorService.execute(() -> {
+                try {
+                    semaphore.acquire();
+                    ATOMIC_INT_COUNT.incrementAndGet();
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
+            });
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -103,10 +115,16 @@ public class CountExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
-            executorService.execute(() -> ATOMIC_LONG_COUNT.incrementAndGet());
-            semaphore.release();
-            countDownLatch.countDown();
+            executorService.execute(() -> {
+                try {
+                    semaphore.acquire();
+                    ATOMIC_LONG_COUNT.incrementAndGet();
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
+            });
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -131,10 +149,16 @@ public class CountExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
-            executorService.execute(() -> LONG_ADDER_COUNT.increment());
-            semaphore.release();
-            countDownLatch.countDown();
+            executorService.execute(() -> {
+                try {
+                    semaphore.acquire();
+                    LONG_ADDER_COUNT.increment();
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
+            });
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -160,10 +184,16 @@ public class CountExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
-            executorService.execute(() -> ATOMIC_REF.compareAndSet(ATOMIC_REF.get(),1 + ATOMIC_REF.get()/*非原子*/));
-            semaphore.release();
-            countDownLatch.countDown();
+            executorService.execute(() -> {
+                try {
+                    semaphore.acquire();
+                    ATOMIC_REF.compareAndSet(ATOMIC_REF.get(),1 + ATOMIC_REF.get()/*非原子*/);
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
+            });
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -220,14 +250,18 @@ public class CountExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
             executorService.execute(() -> {
-                if(HAS_HAPPENED.compareAndSet(false,true)){
-                    log.info("only execute once : {}", HAS_HAPPENED.get());
+                try {
+                    semaphore.acquire();
+                    if(HAS_HAPPENED.compareAndSet(false,true)){
+                        log.info("only execute once : {}", HAS_HAPPENED.get());
+                    }
+                    semaphore.release();
+                    countDownLatch.countDown();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();
@@ -252,10 +286,16 @@ public class CountExample {
         Semaphore semaphore = new Semaphore(concurrentCount);
         ExecutorService executorService = Executors.newCachedThreadPool();
         for (int i = 0; i < requestCount; i++) {
-            semaphore.acquire();
-            executorService.execute(() -> V_COUNT++);
-            semaphore.release();
-            countDownLatch.countDown();
+            executorService.execute(() -> {
+                try {
+                    semaphore.acquire();
+                    V_COUNT++;
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
+            });
         }
         countDownLatch.await();
         executorService.shutdown();

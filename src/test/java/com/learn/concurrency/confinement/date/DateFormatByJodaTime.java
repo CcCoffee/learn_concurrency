@@ -30,12 +30,16 @@ public class DateFormatByJodaTime {
         Semaphore semaphore = new Semaphore(threadTotal);
         for (int i = 0; i < client; i++) {
             final int count = i;
-            semaphore.acquire();
             executorService.execute(() -> {
-                parse(count);
+                try {
+                    semaphore.acquire();
+                    parse(count);
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();

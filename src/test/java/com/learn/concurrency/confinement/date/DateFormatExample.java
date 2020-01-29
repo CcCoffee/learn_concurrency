@@ -24,12 +24,16 @@ public class DateFormatExample {
         CountDownLatch countDownLatch = new CountDownLatch(client);
         Semaphore semaphore = new Semaphore(threadTotal);
         for (int i = 0; i < client; i++) {
-            semaphore.acquire();
             executorService.execute(() -> {
-                parse();
+                try {
+                    semaphore.acquire();
+                    parse();
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                countDownLatch.countDown();
             });
-            semaphore.release();
-            countDownLatch.countDown();
         }
         countDownLatch.await();
         executorService.shutdown();
